@@ -14,6 +14,7 @@ local M = {}
 -- @field start_in_normal_mode boolean Whether to start in normal mode instead of insert mode when opening Claude Code
 -- @field hide_numbers boolean Hide line numbers in the terminal window
 -- @field hide_signcolumn boolean Hide the sign column in the terminal window
+-- @field hide_from_tabs boolean Hide the Claude Code buffer from tab navigation
 -- @field float table|nil Floating window configuration (only used when position is "float")
 -- @field float.width number|string Width of floating window (number: columns, string: percentage like "80%")
 -- @field float.height number|string Height of floating window (number: rows, string: percentage like "80%")
@@ -82,6 +83,7 @@ M.default_config = {
     start_in_normal_mode = false, -- Whether to start in normal mode instead of insert mode
     hide_numbers = true, -- Hide line numbers in the terminal window
     hide_signcolumn = true, -- Hide the sign column in the terminal window
+    hide_from_tabs = true, -- Hide the Claude Code buffer from tab navigation
     -- Default floating window configuration
     float = {
       width = '80%', -- Width as percentage of editor
@@ -168,6 +170,10 @@ local function validate_window_config(window)
 
   if type(window.hide_signcolumn) ~= 'boolean' then
     return false, 'window.hide_signcolumn must be a boolean'
+  end
+
+  if type(window.hide_from_tabs) ~= 'boolean' then
+    return false, 'window.hide_from_tabs must be a boolean'
   end
 
   return true, nil

@@ -99,16 +99,19 @@ local function create_float(config, existing_bufnr)
   -- Create buffer if we don't have an existing one
   local bufnr = existing_bufnr
   if not bufnr then
-    bufnr = vim.api.nvim_create_buf(false, true) -- unlisted, scratch
+    local unlisted = config.window.hide_from_tabs
+    bufnr = vim.api.nvim_create_buf(not unlisted, true) -- listed/unlisted based on config, scratch
   else
     -- Validate existing buffer is still valid and a terminal
     if not vim.api.nvim_buf_is_valid(bufnr) then
-      bufnr = vim.api.nvim_create_buf(false, true) -- unlisted, scratch
+      local unlisted = config.window.hide_from_tabs
+      bufnr = vim.api.nvim_create_buf(not unlisted, true) -- listed/unlisted based on config, scratch
     else
       local buftype = vim.api.nvim_get_option_value('buftype', {buf = bufnr})
       if buftype ~= 'terminal' then
         -- Buffer exists but is no longer a terminal, create a new one
-        bufnr = vim.api.nvim_create_buf(false, true) -- unlisted, scratch
+        local unlisted = config.window.hide_from_tabs
+        bufnr = vim.api.nvim_create_buf(not unlisted, true) -- listed/unlisted based on config, scratch
       end
     end
   end
@@ -322,7 +325,8 @@ end
 local function create_new_instance(claude_code, config, git, instance_id)
   if config.window.position == 'float' then
     -- For floating window, create buffer first with terminal
-    local new_bufnr = vim.api.nvim_create_buf(false, true) -- unlisted, scratch
+    local unlisted = config.window.hide_from_tabs
+    local new_bufnr = vim.api.nvim_create_buf(not unlisted, true) -- listed/unlisted based on config, scratch
     vim.api.nvim_set_option_value('bufhidden', 'hide', {buf = new_bufnr})
 
     -- Create the floating window
@@ -361,6 +365,11 @@ local function create_new_instance(claude_code, config, git, instance_id)
 
     vim.cmd(cmd)
     vim.cmd 'setlocal bufhidden=hide'
+
+    -- Hide from buffer list if configured
+    if config.window.hide_from_tabs then
+      vim.cmd 'setlocal nobuflisted'
+    end
 
     -- Create a unique buffer name
     local buffer_name = generate_buffer_name(instance_id, config)
