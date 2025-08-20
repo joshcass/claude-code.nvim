@@ -38,12 +38,6 @@ M.config = {}
 --- @type table
 M.claude_code = terminal.terminal
 
---- Force insert mode when entering the Claude Code window
---- This is a public function used in keymaps
-function M.force_insert_mode()
-  terminal.force_insert_mode(M, M.config)
-end
-
 --- Get the current active buffer number
 --- @return number|nil bufnr Current Claude instance buffer number or nil
 local function get_current_buffer_number()
@@ -53,6 +47,80 @@ local function get_current_buffer_number()
     return M.claude_code.instances[current_instance]
   end
   return nil
+end
+
+--- Force insert mode when entering the Claude Code window
+--- This is a public function used in keymaps
+function M.force_insert_mode()
+  terminal.force_insert_mode(M, M.config)
+end
+
+--- Send current file path to Claude Code terminal
+--- This is called from any buffer to send its file path to Claude Code
+function M.send_current_file_path()
+  -- Get the file path of the currently active buffer (the one we're calling this from)
+  local current_file = vim.api.nvim_buf_get_name(0)
+
+  if current_file == '' or vim.fn.isdirectory(current_file) == 1 then
+    vim.notify('No file to send to Claude Code', vim.log.levels.WARN)
+    return
+  end
+
+  -- Convert to relative path
+  local relative_path = vim.fn.fnamemodify(current_file, ':~:.')
+
+  -- Ensure Claude Code terminal exists, create if needed
+  local bufnr = get_current_buffer_number()
+  if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
+    -- Toggle to create/show Claude Code terminal
+    M.toggle()
+    -- Get the buffer number after toggle
+    bufnr = get_current_buffer_number()
+    if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
+      vim.notify('Failed to create Claude Code terminal', vim.log.levels.ERROR)
+      return
+    end
+  end
+
+  -- Send the file path to the terminal
+  local job_id = vim.b[bufnr].terminal_job_id
+  if not job_id then
+    vim.notify('Claude Code terminal job not found', vim.log.levels.ERROR)
+    return
+  end
+
+  vim.api.nvim_chan_send(job_id, relative_path)
+
+  -- Switch to Claude Code terminal window and enter insert mode
+  local wins = vim.api.nvim_list_wins()
+  local target_win = nil
+
+  -- Find the window that contains our Claude buffer
+  for _, win in ipairs(wins) do
+    if vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win) == bufnr then
+      target_win = win
+      break
+    end
+  end
+
+  if not target_win then
+    -- Terminal buffer exists but no window is showing it, open it
+    M.toggle()
+    -- Find the window again after toggle
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+      if vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win) == bufnr then
+        target_win = win
+        break
+      end
+    end
+  end
+
+  if target_win and vim.api.nvim_win_is_valid(target_win) then
+    vim.api.nvim_set_current_win(target_win)
+    vim.cmd('startinsert!')
+  end
+
+  vim.notify('Sent file path: ' .. relative_path, vim.log.levels.INFO)
 end
 
 --- Toggle the Claude Code terminal window

@@ -135,6 +135,7 @@ M.default_config = {
     },
     window_navigation = true, -- Enable window navigation keymaps (<C-h/j/k/l>)
     scrolling = true, -- Enable scrolling keymaps (<C-f/b>) for page up/down
+    send_file_path = '<leader>cf', -- Send current file path to Claude Code
   },
 }
 
@@ -363,6 +364,13 @@ local function validate_keymaps_config(keymaps)
 
   if type(keymaps.scrolling) ~= 'boolean' then
     return false, 'keymaps.scrolling must be a boolean'
+  end
+
+  if
+    keymaps.send_file_path ~= nil
+    and not (keymaps.send_file_path == false or type(keymaps.send_file_path) == 'string')
+  then
+    return false, 'keymaps.send_file_path must be a string or false'
   end
 
   return true, nil

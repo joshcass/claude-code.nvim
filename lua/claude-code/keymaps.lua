@@ -52,6 +52,16 @@ function M.register_keymaps(claude_code, config)
     end
   end
 
+  -- Register send_file_path keymap if configured
+  if config.keymaps.send_file_path then
+    vim.api.nvim_set_keymap(
+      'n',
+      config.keymaps.send_file_path,
+      [[:lua require('claude-code').send_current_file_path()<CR>]],
+      vim.tbl_extend('force', map_opts, { desc = 'Claude Code: Send file path' })
+    )
+  end
+
   -- Register with which-key if it's available
   vim.defer_fn(function()
     local status_ok, which_key = pcall(require, 'which-key')
@@ -80,6 +90,14 @@ function M.register_keymaps(claude_code, config)
             }
           end
         end
+      end
+
+      -- Register send_file_path keymap with which-key
+      if config.keymaps.send_file_path then
+        which_key.add {
+          mode = 'n',
+          { config.keymaps.send_file_path, desc = 'Claude Code: Send file path', icon = '📁' },
+        }
       end
     end
   end, 100)
@@ -186,6 +204,17 @@ function M.setup_terminal_navigation(claude_code, config)
         '<C-b>',
         [[<C-\><C-n><C-b>i]],
         { noremap = true, silent = true, desc = 'Scroll full page up' }
+      )
+    end
+
+    -- Add send file path keymap
+    if config.keymaps.send_file_path then
+      vim.api.nvim_buf_set_keymap(
+        buf,
+        'n',
+        config.keymaps.send_file_path,
+        [[:lua require('claude-code').send_current_file_path()<CR>]],
+        { noremap = true, silent = true, desc = 'Send current file path to Claude Code' }
       )
     end
   end
