@@ -66,8 +66,22 @@ function M.send_current_file_path()
     return
   end
 
-  -- Convert to relative path
-  local relative_path = vim.fn.fnamemodify(current_file, ':~:.')
+  -- Get path relative to project root, fallback to full path
+  local git_root = git.get_git_root()
+  local file_path
+  if git_root then
+    -- Use string.sub to remove git root path more reliably
+    local git_root_with_slash = git_root .. '/'
+    if current_file:sub(1, #git_root_with_slash) == git_root_with_slash then
+      file_path = current_file:sub(#git_root_with_slash + 1)
+    else
+      -- File is not under git root, use full path
+      file_path = current_file
+    end
+  else
+    -- Fallback to full absolute path if not in git repo
+    file_path = current_file
+  end
 
   -- Ensure Claude Code terminal exists, create if needed
   local bufnr = get_current_buffer_number()
@@ -89,7 +103,7 @@ function M.send_current_file_path()
     return
   end
 
-  vim.api.nvim_chan_send(job_id, relative_path)
+  vim.api.nvim_chan_send(job_id, file_path)
 
   -- Switch to Claude Code terminal window and enter insert mode
   local wins = vim.api.nvim_list_wins()
@@ -120,7 +134,7 @@ function M.send_current_file_path()
     vim.cmd('startinsert!')
   end
 
-  vim.notify('Sent file path: ' .. relative_path, vim.log.levels.INFO)
+  vim.notify('Sent file path: ' .. file_path, vim.log.levels.INFO)
 end
 
 --- Toggle the Claude Code terminal window
